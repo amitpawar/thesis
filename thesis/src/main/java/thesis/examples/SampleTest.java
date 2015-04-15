@@ -73,7 +73,7 @@ public class SampleTest {
 				+ SampleTest.class.getName(), WriteMode.OVERWRITE);*/
 		printSet.print();
 	
-	/*	JavaPlan plan =  env.createProgramPlan();
+/*		JavaPlan plan =  env.createProgramPlan();
 		Optimizer compiler = new Optimizer();
 		compiler.setDefaultParallelism(1);
 		OptimizedPlan opPlan = compiler.compile(plan);
@@ -134,7 +134,7 @@ public class SampleTest {
 		}*/
 		
 		OperatorTree tree = new OperatorTree(env);
-		tree.createTree();
+		tree.createOperatorTree();
 		
 		//env.execute();
 	}
