@@ -1,6 +1,7 @@
 package thesis.input.operatortree;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.flink.api.common.operators.base.CrossOperatorBase;
@@ -9,6 +10,8 @@ import org.apache.flink.api.common.operators.base.GroupReduceOperatorBase;
 import org.apache.flink.api.common.operators.base.JoinOperatorBase;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DistinctOperator;
+import org.apache.flink.api.java.operators.JoinOperator;
+import org.apache.flink.api.java.operators.JoinOperator.JoinOperatorSets.JoinOperatorSetsPredicate;
 import org.apache.flink.api.java.operators.UnionOperator;
 import org.apache.flink.api.java.operators.translation.JavaPlan;
 import org.apache.flink.api.java.operators.translation.PlanProjectOperator;
@@ -26,6 +29,8 @@ import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.operators.SingleInputOperator;
 import org.apache.flink.api.common.operators.Union;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+
+import thesis.input.operatortree.SingleOperator.JoinCondition;
 
 public class OperatorTree {
 
@@ -147,6 +152,11 @@ public class OperatorTree {
 			System.out.println(this.operators.get(i).getOperatorType().name());
 			System.out.println("OUTPUT ");
 			System.out.println(this.operators.get(i).getOperatorOutputType().toString());
+			if(this.operators.get(i).getJoinCondition() != null)
+				System.out.println(this.operators.get(i).getJoinCondition().getFirstInput()+"join("+
+						this.operators.get(i).getJoinCondition().getSecontInput()+").where("
+						+this.operators.get(i).getJoinCondition().getFirstInputKeyColumns()[0]+").equalsTo("+
+						this.operators.get(i).getJoinCondition().getSecondInputKeyColumns()[0]+")");
 		}
 	}
 
@@ -176,8 +186,9 @@ public class OperatorTree {
 		if (operator instanceof JoinOperatorBase) {
 			if (!isVisited(operator)) {
 				opToAdd.setOperatorType(OperatorType.JOIN);
-				addOperatorDetails(opToAdd, operator);
-				addJoinOperatorDetails((JoinOperatorBase) operator);
+				SingleOperator opToAddWithJoinPred = addJoinOperatorDetails((JoinOperatorBase) operator, opToAdd);
+				addOperatorDetails(opToAddWithJoinPred, operator);
+				
 			}
 		}
 
@@ -247,12 +258,24 @@ public class OperatorTree {
 		return inputTypes;
 	}
 	
-	public void addJoinOperatorDetails(JoinOperatorBase joinOperator){
-		System.out.println(joinOperator.getKeyColumns(InputNum.FIRST.getValue()).length);
-		System.out.println(joinOperator.getKeyColumns(InputNum.SECOND.getValue()).length);
+	public SingleOperator addJoinOperatorDetails(JoinOperatorBase joinOperator, SingleOperator opToAdd){
 		
 		
+		int[] firstInputKeys = joinOperator.getKeyColumns(InputNum.FIRST.getValue());
+		int[] secondInputKeys = joinOperator.getKeyColumns(InputNum.SECOND.getValue());
 		
+		JoinCondition joinPred = opToAdd.new JoinCondition();
+		
+		joinPred.setFirstInput(InputNum.FIRST.getValue());
+		joinPred.setSecontInput(InputNum.SECOND.getValue());
+		joinPred.setFirstInputKeyColumns(firstInputKeys);
+		joinPred.setSecondInputKeyColumns(secondInputKeys);
+		
+		
+		opToAdd.setJoinCondition(joinPred);
+		
+		return opToAdd;
+	
 	}
 	
 }

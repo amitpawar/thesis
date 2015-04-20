@@ -22,6 +22,7 @@ import org.apache.flink.api.java.operators.translation.JavaPlan;
 import org.apache.flink.api.java.operators.translation.PlanFilterOperator;
 import org.apache.flink.api.java.operators.translation.PlanProjectOperator;
 import org.apache.flink.api.java.operators.translation.PlanFilterOperator.FlatMapFilter;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.client.program.PackagedProgram.PreviewPlanEnvironment;
@@ -42,14 +43,12 @@ import org.apache.flink.optimizer.plan.SourcePlanNode;
 import org.apache.flink.optimizer.plandump.DumpableConnection;
 import org.apache.flink.optimizer.plandump.DumpableNode;
 import org.apache.flink.optimizer.plandump.PlanJSONDumpGenerator;
-import org.hamcrest.core.IsInstanceOf;
 
 import thesis.input.operatortree.OperatorTree;
 
-
-
-
 public class SampleTest {
+
+
 
 	public static void main(String[] args) throws Exception {
 
@@ -59,114 +58,121 @@ public class SampleTest {
 		DataSource<String> visits = env.readTextFile(Config.pathToVisits());
 		DataSource<String> urls = env.readTextFile(Config.pathToUrls());
 
-		DataSet<Tuple2<String, String>> visitSet = visits.flatMap(
-				new VisitsReader()).distinct();
+		/*DataSet<Tuple2<String, String>> visitSet = visits.flatMap(
+				new VisitsReader()).distinct();*/
+		DataSet<Visits> visitSet = visits.flatMap(new VisitsPOJAReader());
 
 		DataSet<Tuple2<String, Long>> urlSet = urls.flatMap(new URLsReader())
 				.distinct();
 
-		DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> joinSet = visitSet
-				.join(urlSet).where(1).equalTo(0);
+		DataSet<Tuple2<Visits, Tuple2<String, Long>>> joinSet = visitSet
+				.join(urlSet).where("xname").equalTo("f0");
 
-		DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> filterSet = joinSet
+		/*DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> filterSet = joinSet
 				.filter(new RankFilter());
 
-		DataSet<Tuple3<String, String, Long>> printSet = filterSet.project(1);
-				//.flatMap(new PrintResult());
+		DataSet<Tuple3<String, String, Long>> printSet = filterSet.project(1);*/
+		// .flatMap(new PrintResult());
 
-		
-		/*printSet.writeAsCsv(Config.outputPath()+"/"
-				+ SampleTest.class.getName(), WriteMode.OVERWRITE);*/
-		printSet.print();
-	
-	/*	JavaPlan plan =  env.createProgramPlan();
-		Optimizer compiler = new Optimizer();
-		compiler.setDefaultParallelism(1);
-		OptimizedPlan opPlan = compiler.compile(plan);
-		
-		for(PlanNode node : opPlan.getAllNodes()){
-			Operator<?> operator = node.getOptimizerNode().getOperator();
-			operator.setParallelism(1);
-			System.out.println("Node "+node.getOptimizerNode().getOperator().getName());
-			
-			if(operator instanceof JoinOperatorBase){
-				if(operator instanceof DualInputOperator)
-				{
-					System.out.println("Trueeeeeeeeeeeeeeeeeeeee thattttttttt");
-					System.out.println(((JoinOperatorBase) operator).getNumberOfInputs());
-				}
-				
-				//System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getInputType());
-				//System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getOutputType());
-				
-			}
-			if(operator instanceof PlanProjectOperator){
-				System.out.println("Falseeeeeeeeeeeeeeeeeeeeeee");
-				System.out.println(((PlanProjectOperator) operator).getOperatorInfo().getInputType());
-				System.out.println(((PlanProjectOperator) operator).getOperatorInfo().getOutputType());
-				
-			}
-			
-			if(operator instanceof FilterOperatorBase){
-				System.out.println("FILTERRRRRRRRRRRRRRRR");
-				System.out.println(((FilterOperatorBase) operator).getNumberOfInputs());
-				System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getInputType());
-				System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getOutputType());
-				System.out.println(((FilterOperatorBase)operator).getUserCodeWrapper().getUserCodeObject());
-				Object test = ((FilterOperatorBase)operator).getUserCodeWrapper().getUserCodeObject();
-				
-				if(test instanceof FlatMapFilter){
-					System.out.println("Yahoooooooooooooooooooooooooooooooo");
-					System.out.println(((FlatMapFilter)test).getWrappedFunction());
-				}
-			}
-			
-			if(node.getOptimizerNode().getOutgoingConnections() != null)
-			{
-				for(DagConnection conn : node.getOptimizerNode().getOutgoingConnections()){
-					System.out.println("OUTGOING-----"+conn.getTarget().getOperator().getName());
-				}
-			}
-			for(DumpableConnection<OptimizerNode> input : node.getOptimizerNode().getDumpableInputs() ){
-				if(input!=null)
-					System.out.println("Input "+input);
-			}
-			
-			System.out.println("Output "+node.getOptimizerNode().getOperator().getOperatorInfo().getOutputType().toString());
-			System.out.println("Config "+node.getOptimizerNode().getOperator().getParameters());
-			//System.out.println(node.getNodeName());
-			
-			for(Channel channel : node.getInputs()){
-				System.out.println("Source: "+channel.getSource().getNodeName());
-				System.out.println(": ");
-				System.out.println("Target: "+channel.getTarget().getNodeName());
-				
-			}
-		}
-		
-		PlanJSONDumpGenerator dumper = new PlanJSONDumpGenerator();
-		System.out.println(dumper.getOptimizerPlanAsJSON(opPlan));
-		PreviewPlanEnvironment pEnv = new PreviewPlanEnvironment();
-		pEnv.setAsContext();
-		List<DataSinkNode> previwPlan = Optimizer.createPreOptimizedPlan(plan);
-		System.out.println(dumper.getPactPlanAsJSON(previwPlan));
-		System.out.println("PactPlan-----------------");
-		for(DataSinkNode sinkNode : previwPlan){
-			System.out.println("Input" +sinkNode.getInputConnection().toString());
-			System.out.println("Output " +sinkNode.getOutgoingConnections().toString());
-			
-		}
-		
-		for(SinkPlanNode sourceNode : opPlan.getDataSinks()){
-			System.out.println("Source---------"+sourceNode.getNodeName());
-		}*/
-		
-		
-		
+		/*
+		 * printSet.writeAsCsv(Config.outputPath()+"/" +
+		 * SampleTest.class.getName(), WriteMode.OVERWRITE);
+		 */
+		joinSet.print();
+
+		/*
+		 * JavaPlan plan = env.createProgramPlan(); Optimizer compiler = new
+		 * Optimizer(); compiler.setDefaultParallelism(1); OptimizedPlan opPlan
+		 * = compiler.compile(plan);
+		 * 
+		 * for(PlanNode node : opPlan.getAllNodes()){ Operator<?> operator =
+		 * node.getOptimizerNode().getOperator(); operator.setParallelism(1);
+		 * System
+		 * .out.println("Node "+node.getOptimizerNode().getOperator().getName
+		 * ());
+		 * 
+		 * if(operator instanceof JoinOperatorBase){ if(operator instanceof
+		 * DualInputOperator) {
+		 * System.out.println("Trueeeeeeeeeeeeeeeeeeeee thattttttttt");
+		 * System.out.println(((JoinOperatorBase)
+		 * operator).getNumberOfInputs()); }
+		 * 
+		 * //System.out.println(((FilterOperatorBase)
+		 * operator).getOperatorInfo().getInputType());
+		 * //System.out.println(((FilterOperatorBase)
+		 * operator).getOperatorInfo().getOutputType());
+		 * 
+		 * } if(operator instanceof PlanProjectOperator){
+		 * System.out.println("Falseeeeeeeeeeeeeeeeeeeeeee");
+		 * System.out.println(((PlanProjectOperator)
+		 * operator).getOperatorInfo().getInputType());
+		 * System.out.println(((PlanProjectOperator)
+		 * operator).getOperatorInfo().getOutputType());
+		 * 
+		 * }
+		 * 
+		 * if(operator instanceof FilterOperatorBase){
+		 * System.out.println("FILTERRRRRRRRRRRRRRRR");
+		 * System.out.println(((FilterOperatorBase)
+		 * operator).getNumberOfInputs());
+		 * System.out.println(((FilterOperatorBase)
+		 * operator).getOperatorInfo().getInputType());
+		 * System.out.println(((FilterOperatorBase)
+		 * operator).getOperatorInfo().getOutputType());
+		 * System.out.println(((FilterOperatorBase
+		 * )operator).getUserCodeWrapper().getUserCodeObject()); Object test =
+		 * ((
+		 * FilterOperatorBase)operator).getUserCodeWrapper().getUserCodeObject(
+		 * );
+		 * 
+		 * if(test instanceof FlatMapFilter){
+		 * System.out.println("Yahoooooooooooooooooooooooooooooooo");
+		 * System.out.println(((FlatMapFilter)test).getWrappedFunction()); } }
+		 * 
+		 * if(node.getOptimizerNode().getOutgoingConnections() != null) {
+		 * for(DagConnection conn :
+		 * node.getOptimizerNode().getOutgoingConnections()){
+		 * System.out.println(
+		 * "OUTGOING-----"+conn.getTarget().getOperator().getName()); } }
+		 * for(DumpableConnection<OptimizerNode> input :
+		 * node.getOptimizerNode().getDumpableInputs() ){ if(input!=null)
+		 * System.out.println("Input "+input); }
+		 * 
+		 * System.out.println("Output "+node.getOptimizerNode().getOperator().
+		 * getOperatorInfo().getOutputType().toString());
+		 * System.out.println("Config "
+		 * +node.getOptimizerNode().getOperator().getParameters());
+		 * //System.out.println(node.getNodeName());
+		 * 
+		 * for(Channel channel : node.getInputs()){
+		 * System.out.println("Source: "+channel.getSource().getNodeName());
+		 * System.out.println(": ");
+		 * System.out.println("Target: "+channel.getTarget().getNodeName());
+		 * 
+		 * } }
+		 * 
+		 * PlanJSONDumpGenerator dumper = new PlanJSONDumpGenerator();
+		 * System.out.println(dumper.getOptimizerPlanAsJSON(opPlan));
+		 * PreviewPlanEnvironment pEnv = new PreviewPlanEnvironment();
+		 * pEnv.setAsContext(); List<DataSinkNode> previwPlan =
+		 * Optimizer.createPreOptimizedPlan(plan);
+		 * System.out.println(dumper.getPactPlanAsJSON(previwPlan));
+		 * System.out.println("PactPlan-----------------"); for(DataSinkNode
+		 * sinkNode : previwPlan){ System.out.println("Input"
+		 * +sinkNode.getInputConnection().toString());
+		 * System.out.println("Output "
+		 * +sinkNode.getOutgoingConnections().toString());
+		 * 
+		 * }
+		 * 
+		 * for(SinkPlanNode sourceNode : opPlan.getDataSinks()){
+		 * System.out.println("Source---------"+sourceNode.getNodeName()); }
+		 */
+
 		OperatorTree tree = new OperatorTree(env);
 		tree.createOperatorTree();
-		
-		//env.execute();
+
+		// env.execute();
 	}
 
 	public static class PrintResult
@@ -220,6 +226,27 @@ public class SampleTest {
 
 	}
 
+	public static class VisitsPOJAReader implements
+			FlatMapFunction<String, Visits> {
+
+		private final Pattern SEPARATOR = Pattern.compile("[ \t,]");
+
+		// Reads Visit data-set from flat file into tuples of <User,URL>
+		public void flatMap(String readLineFromFile,
+				Collector<Visits> collector) throws Exception {
+
+			if (!readLineFromFile.startsWith("%")) {
+				String[] tokens = SEPARATOR.split(readLineFromFile);
+
+				String user = tokens[2];
+				String url = tokens[1];
+
+				collector.collect(new Visits(url, user));
+			}
+		}
+
+	}
+
 	public static class URLsReader implements
 			FlatMapFunction<String, Tuple2<String, Long>> {
 
@@ -265,3 +292,5 @@ public class SampleTest {
 
 	}
 }
+
+

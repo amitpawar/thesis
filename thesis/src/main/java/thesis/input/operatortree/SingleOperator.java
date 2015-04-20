@@ -12,8 +12,17 @@ public class SingleOperator {
 	private OperatorType previousOperatorType;
 	private TypeInformation<?> operatorOutputType;
 	private List<TypeInformation<?>> operatorInputType;
+	private JoinCondition joinCondition;
 	
 	
+
+	public JoinCondition getJoinCondition() {
+		return joinCondition;
+	}
+
+	public void setJoinCondition(JoinCondition joinCondition) {
+		this.joinCondition = joinCondition;
+	}
 
 	public List<TypeInformation<?>> getOperatorInputType() {
 		return operatorInputType;
@@ -62,4 +71,43 @@ public class SingleOperator {
 	public void setPreviousOperatorType(OperatorType type){
 		this.previousOperatorType = type;
 	}
+	
+	
+	public class JoinCondition {
+		private int firstInput;
+		private int secontInput;
+		private int[] firstInputKeyColumns;
+		private int[] secondInputKeyColumns;
+	
+		public int[] getFirstInputKeyColumns() {
+			return firstInputKeyColumns;
+		}
+		public void setFirstInputKeyColumns(int[] firstInputKeyColumns) {
+			this.firstInputKeyColumns = firstInputKeyColumns;
+		}
+		public int[] getSecondInputKeyColumns() {
+			return secondInputKeyColumns;
+		}
+		public void setSecondInputKeyColumns(int[] secondInputKeyColumns) {
+			this.secondInputKeyColumns = secondInputKeyColumns;
+		}
+	
+		public int getFirstInput() {
+			return firstInput;
+		}
+		public void setFirstInput(int firstInput) {
+			this.firstInput = firstInput;
+		}
+		public int getSecontInput() {
+			return secontInput;
+		}
+		public void setSecontInput(int secontInput) {
+			this.secontInput = secontInput;
+		}
+	
+		
+	}
+
 }
+
+
