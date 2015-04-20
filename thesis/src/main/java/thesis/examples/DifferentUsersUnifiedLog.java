@@ -9,6 +9,7 @@ import org.apache.flink.core.fs.FileSystem.WriteMode;
 import thesis.examples.UserPageVisitsGroupedLog.GroupCounter;
 import thesis.examples.UserPageVisitsGroupedLog.HighVisitsFilter;
 import thesis.examples.UserPageVisitsGroupedLog.VisitsReaderWithCount;
+import thesis.input.operatortree.OperatorTree;
 
 public class DifferentUsersUnifiedLog {
 
@@ -31,7 +32,9 @@ public class DifferentUsersUnifiedLog {
 		
 		groupedFilteredSet.writeAsCsv(Config.outputPath()+"/"+DifferentUsersUnifiedLog.class.getName(),WriteMode.OVERWRITE);
 
-		env.execute();
+		//env.execute();
+		OperatorTree tree = new OperatorTree(env);
+		tree.createOperatorTree();
 	}
 
 }

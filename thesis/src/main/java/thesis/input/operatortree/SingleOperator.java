@@ -1,5 +1,7 @@
 package thesis.input.operatortree;
 
+import java.util.List;
+
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
 public class SingleOperator {
@@ -9,7 +11,18 @@ public class SingleOperator {
 	private String previousOperator;
 	private OperatorType previousOperatorType;
 	private TypeInformation<?> operatorOutputType;
+	private List<TypeInformation<?>> operatorInputType;
 	
+	
+
+	public List<TypeInformation<?>> getOperatorInputType() {
+		return operatorInputType;
+	}
+
+	public void setOperatorInputType(List<TypeInformation<?>> operatorInputType) {
+		this.operatorInputType = operatorInputType;
+	}
+
 	public TypeInformation<?> getOperatorOutputType() {
 		return operatorOutputType;
 	}

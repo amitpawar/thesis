@@ -7,15 +7,21 @@ import java.util.regex.Pattern;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.operators.DualInputOperator;
 import org.apache.flink.api.common.operators.GenericDataSourceBase;
 import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.operators.base.FilterOperatorBase;
+import org.apache.flink.api.common.operators.base.FlatMapOperatorBase;
 import org.apache.flink.api.common.operators.base.GroupReduceOperatorBase;
 import org.apache.flink.api.common.operators.base.JoinOperatorBase;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.operators.UdfOperator;
 import org.apache.flink.api.java.operators.translation.JavaPlan;
+import org.apache.flink.api.java.operators.translation.PlanFilterOperator;
+import org.apache.flink.api.java.operators.translation.PlanProjectOperator;
+import org.apache.flink.api.java.operators.translation.PlanFilterOperator.FlatMapFilter;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.client.program.PackagedProgram.PreviewPlanEnvironment;
@@ -65,15 +71,15 @@ public class SampleTest {
 		DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> filterSet = joinSet
 				.filter(new RankFilter());
 
-		DataSet<Tuple3<String, String, Long>> printSet = filterSet
-				.flatMap(new PrintResult());
+		DataSet<Tuple3<String, String, Long>> printSet = filterSet.project(1);
+				//.flatMap(new PrintResult());
 
 		
 		/*printSet.writeAsCsv(Config.outputPath()+"/"
 				+ SampleTest.class.getName(), WriteMode.OVERWRITE);*/
 		printSet.print();
 	
-/*		JavaPlan plan =  env.createProgramPlan();
+	/*	JavaPlan plan =  env.createProgramPlan();
 		Optimizer compiler = new Optimizer();
 		compiler.setDefaultParallelism(1);
 		OptimizedPlan opPlan = compiler.compile(plan);
@@ -83,16 +89,38 @@ public class SampleTest {
 			operator.setParallelism(1);
 			System.out.println("Node "+node.getOptimizerNode().getOperator().getName());
 			
-			if(operator instanceof GenericDataSourceBase){
-				System.out.println("Trueeeeeeeeeeeeeeeeeeeee");
-				System.out.println(((GenericDataSourceBase) operator).getParallelism());
+			if(operator instanceof JoinOperatorBase){
+				if(operator instanceof DualInputOperator)
+				{
+					System.out.println("Trueeeeeeeeeeeeeeeeeeeee thattttttttt");
+					System.out.println(((JoinOperatorBase) operator).getNumberOfInputs());
+				}
+				
+				//System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getInputType());
+				//System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getOutputType());
 				
 			}
-			if(operator instanceof GroupReduceOperatorBase){
+			if(operator instanceof PlanProjectOperator){
 				System.out.println("Falseeeeeeeeeeeeeeeeeeeeeee");
-				System.out.println(((GroupReduceOperatorBase) operator).getName());
+				System.out.println(((PlanProjectOperator) operator).getOperatorInfo().getInputType());
+				System.out.println(((PlanProjectOperator) operator).getOperatorInfo().getOutputType());
 				
 			}
+			
+			if(operator instanceof FilterOperatorBase){
+				System.out.println("FILTERRRRRRRRRRRRRRRR");
+				System.out.println(((FilterOperatorBase) operator).getNumberOfInputs());
+				System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getInputType());
+				System.out.println(((FilterOperatorBase) operator).getOperatorInfo().getOutputType());
+				System.out.println(((FilterOperatorBase)operator).getUserCodeWrapper().getUserCodeObject());
+				Object test = ((FilterOperatorBase)operator).getUserCodeWrapper().getUserCodeObject();
+				
+				if(test instanceof FlatMapFilter){
+					System.out.println("Yahoooooooooooooooooooooooooooooooo");
+					System.out.println(((FlatMapFilter)test).getWrappedFunction());
+				}
+			}
+			
 			if(node.getOptimizerNode().getOutgoingConnections() != null)
 			{
 				for(DagConnection conn : node.getOptimizerNode().getOutgoingConnections()){
@@ -132,6 +160,8 @@ public class SampleTest {
 		for(SinkPlanNode sourceNode : opPlan.getDataSinks()){
 			System.out.println("Source---------"+sourceNode.getNodeName());
 		}*/
+		
+		
 		
 		OperatorTree tree = new OperatorTree(env);
 		tree.createOperatorTree();
