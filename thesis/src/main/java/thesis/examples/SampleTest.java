@@ -1,5 +1,6 @@
 package thesis.examples;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -44,41 +45,51 @@ import org.apache.flink.optimizer.plandump.DumpableConnection;
 import org.apache.flink.optimizer.plandump.DumpableNode;
 import org.apache.flink.optimizer.plandump.PlanJSONDumpGenerator;
 
+import thesis.algorithm.logic.TupleGenerator;
 import thesis.input.operatortree.OperatorTree;
 
 public class SampleTest {
 
-
+	
 
 	public static void main(String[] args) throws Exception {
 
+		List<DataSet<?>> dataSources = new ArrayList<DataSet<?>>();
+		
 		ExecutionEnvironment env = ExecutionEnvironment
 				.getExecutionEnvironment();
 
 		DataSource<String> visits = env.readTextFile(Config.pathToVisits());
 		DataSource<String> urls = env.readTextFile(Config.pathToUrls());
-
-		/*DataSet<Tuple2<String, String>> visitSet = visits.flatMap(
-				new VisitsReader()).distinct();*/
-		DataSet<Visits> visitSet = visits.flatMap(new VisitsPOJAReader());
+		
+		
+		DataSet<Tuple2<String, String>> visitSet = visits.flatMap(
+				new VisitsReader()).distinct();
+		//DataSet<Visits> visitSet = visits.flatMap(new VisitsPOJAReader());
 
 		DataSet<Tuple2<String, Long>> urlSet = urls.flatMap(new URLsReader())
 				.distinct();
+		
+		dataSources.add(visitSet);
+		dataSources.add(urlSet);
 
-		DataSet<Tuple2<Visits, Tuple2<String, Long>>> joinSet = visitSet
-				.join(urlSet).where("xname").equalTo("f0");
+		/*DataSet<Tuple2<Visits, Tuple2<String, Long>>> joinSet = visitSet
+				.join(urlSet).where(1).equalTo(0);*/
+		
+		DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> joinSet = visitSet
+				.join(urlSet).where(1).equalTo(0);
 
-		/*DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> filterSet = joinSet
+		DataSet<Tuple2<Tuple2<String, String>, Tuple2<String, Long>>> filterSet = joinSet
 				.filter(new RankFilter());
 
-		DataSet<Tuple3<String, String, Long>> printSet = filterSet.project(1);*/
+		DataSet<Tuple3<String, String, Long>> printSet = filterSet.project(1);
 		// .flatMap(new PrintResult());
 
 		/*
 		 * printSet.writeAsCsv(Config.outputPath()+"/" +
 		 * SampleTest.class.getName(), WriteMode.OVERWRITE);
 		 */
-		joinSet.print();
+		printSet.print();
 
 		/*
 		 * JavaPlan plan = env.createProgramPlan(); Optimizer compiler = new
@@ -170,9 +181,10 @@ public class SampleTest {
 		 */
 
 		OperatorTree tree = new OperatorTree(env);
-		tree.createOperatorTree();
-
-		// env.execute();
+		//tree.createOperatorTree();
+		TupleGenerator tg = new TupleGenerator();
+		tg.generateTuples(dataSources, tree.createOperatorTree());
+		 env.execute();
 	}
 
 	public static class PrintResult

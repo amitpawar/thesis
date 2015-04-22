@@ -2,6 +2,7 @@ package thesis.input.operatortree;
 
 import java.util.List;
 
+import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 
 public class SingleOperator {
@@ -13,8 +14,17 @@ public class SingleOperator {
 	private TypeInformation<?> operatorOutputType;
 	private List<TypeInformation<?>> operatorInputType;
 	private JoinCondition joinCondition;
+	private Operator<?> operator;
 	
 	
+
+	public Operator<?> getOperator() {
+		return operator;
+	}
+
+	public void setOperator(Operator<?> operator) {
+		this.operator = operator;
+	}
 
 	public JoinCondition getJoinCondition() {
 		return joinCondition;
