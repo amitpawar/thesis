@@ -17,15 +17,15 @@ import org.apache.flink.api.java.operators.JoinOperator.JoinOperatorSets.JoinOpe
 import org.apache.flink.api.java.operators.UnionOperator;
 import org.apache.flink.api.java.operators.translation.JavaPlan;
 import org.apache.flink.api.java.operators.translation.PlanProjectOperator;
-import org.apache.flink.optimizer.DataStatistics;
-import org.apache.flink.optimizer.Optimizer;
-import org.apache.flink.optimizer.costs.DefaultCostEstimator;
-import org.apache.flink.optimizer.dag.DagConnection;
-import org.apache.flink.optimizer.dag.OptimizerNode;
-import org.apache.flink.optimizer.plan.Channel;
-import org.apache.flink.optimizer.plan.OptimizedPlan;
-import org.apache.flink.optimizer.plan.PlanNode;
-import org.apache.flink.optimizer.plan.SourcePlanNode;
+import org.apache.flink.compiler.DataStatistics;
+import org.apache.flink.compiler.PactCompiler;
+import org.apache.flink.compiler.costs.DefaultCostEstimator;
+import org.apache.flink.compiler.dag.PactConnection;
+import org.apache.flink.compiler.dag.OptimizerNode;
+import org.apache.flink.compiler.plan.Channel;
+import org.apache.flink.compiler.plan.OptimizedPlan;
+import org.apache.flink.compiler.plan.PlanNode;
+import org.apache.flink.compiler.plan.SourcePlanNode;
 import org.apache.flink.api.common.operators.DualInputOperator;
 import org.apache.flink.api.common.operators.GenericDataSourceBase;
 import org.apache.flink.api.common.operators.Operator;
@@ -38,7 +38,7 @@ import thesis.input.operatortree.SingleOperator.JoinCondition;
 public class OperatorTree {
 
 	private JavaPlan javaPlan;
-	private Optimizer optimizer;
+	private PactCompiler optimizer;
 	private OptimizedPlan optimizedPlan;
 	private List<SingleOperator> operatorTree;
 	private List<String> addedNodes;
@@ -56,7 +56,7 @@ public class OperatorTree {
 
 	public OperatorTree(ExecutionEnvironment env) {
 		this.javaPlan = env.createProgramPlan();
-		this.optimizer = new Optimizer(new DataStatistics(),
+		this.optimizer = new PactCompiler(new DataStatistics(),
 				new DefaultCostEstimator());
 		this.optimizedPlan = this.optimizer.compile(this.javaPlan);
 		this.operatorTree = new ArrayList<SingleOperator>();
@@ -71,12 +71,12 @@ public class OperatorTree {
 		
 		for (SourcePlanNode sourceNode : this.optimizedPlan.getDataSources()) {
 		
-			if (!isVisited(sourceNode.getProgramOperator())) {
+			if (!isVisited(sourceNode.getPactContract())) {
 				SingleOperator op = new SingleOperator();
 				op.setOperatorType(OperatorType.LOAD);
-				op.setOperator(sourceNode.getProgramOperator());
+				op.setOperator(sourceNode.getPactContract());
 				op.setOperatorName(sourceNode.getNodeName());
-				op.setOperatorOutputType(sourceNode.getOptimizerNode().getOperator().getOperatorInfo().getOutputType());
+				op.setOperatorOutputType(sourceNode.getOptimizerNode().getPactContract().getOperatorInfo().getOutputType());
 				this.operatorTree.add(op);
 				this.addedNodes.add(sourceNode.getNodeName());
 				if (sourceNode.getOptimizerNode().getOutgoingConnections() != null)
@@ -105,8 +105,8 @@ public class OperatorTree {
 		return this.operatorTree;
 	}
 
-	public void addOutgoingNodes(List<DagConnection> outgoingConnections) {
-		for (DagConnection conn : outgoingConnections) {
+	public void addOutgoingNodes(List<PactConnection> outgoingConnections) {
+		for (PactConnection conn : outgoingConnections) {
 			SingleOperator op = new SingleOperator();
 			OptimizerNode node = conn.getTarget().getOptimizerNode();
 			
@@ -126,7 +126,7 @@ public class OperatorTree {
 	@SuppressWarnings("rawtypes")
 	public void addNode(OptimizerNode node) {
 		
-		Operator<?> operator = node.getOperator();
+		Operator<?> operator = node.getPactContract();
 		SingleOperator opToAdd = new SingleOperator();
 		
 		if(operator instanceof FlatMapOperatorBase){

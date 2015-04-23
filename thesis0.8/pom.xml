@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.tuberlin.dima</groupId>
-	<artifactId>thesis</artifactId>
+	<artifactId>thesis0.8</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>thesis</name>
 
@@ -48,7 +48,7 @@
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-java</artifactId>
-			<version>0.9-SNAPSHOT</version>
+			<version>0.8.1</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.slf4j</groupId>
@@ -63,7 +63,7 @@
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-clients</artifactId>
-			<version>0.9-SNAPSHOT</version>
+			<version>0.8.1</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.slf4j</groupId>
@@ -75,5 +75,6 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+	
 	</dependencies>
 </project>
